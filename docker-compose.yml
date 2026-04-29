@@ -42,5 +42,16 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: a@a.a
+      PGADMIN_DEFAULT_PASSWORD: a
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:

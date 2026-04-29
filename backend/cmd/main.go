@@ -31,6 +31,7 @@ func main() {
 	h := handler.NewComicHandler(uc)
 
 	accessService := service.NewAccessService(db)
+	authService := service.NewAuthService(db)
 	planPolicies, err := accessService.LoadPlanPolicies(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -42,6 +43,11 @@ func main() {
 
 	router := gin.Default()
 	router.GET("/health", handler.Health)
+
+	authHandler := handler.NewAuthHandler(authService)
+	router.POST("/auth/register", authHandler.Register())
+	router.POST("/auth/login", authHandler.Login())
+	router.POST("/auth/api-key", authHandler.IssueAPIKey())
 
 	apiV1 := router.Group("/api/v1")
 	apiV1.Use(apiKeyAuth.Require(), rateLimiter.Require())

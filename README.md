@@ -94,6 +94,12 @@ Server starts at `http://localhost:8080`.
 - `standard-demo-key`
 - `premium-demo-key`
 
+## Demo Users (seeded in DB)
+
+- `free@demo.local` / `demo1234` -> free
+- `standard@demo.local` / `demo1234` -> standard
+- `premium@demo.local` / `demo1234` -> premium
+
 Send in header:
 
 ```text
@@ -103,6 +109,9 @@ X-API-Key: <your-key>
 ## Available Endpoints
 
 - `GET /health`
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/api-key`
 - `GET /api/v1/comics`
 - `GET /api/v1/comics/{id}`
 - `GET /api/v1/comics/{id}/chapters`
@@ -113,6 +122,54 @@ X-API-Key: <your-key>
 ```bash
 curl -H "X-API-Key: free-demo-key" http://localhost:8080/api/v1/comics
 curl -H "X-API-Key: free-demo-key" http://localhost:8080/api/v1/comics/search?q=sky
+```
+
+Register (3 plans):
+
+```bash
+curl -X POST http://localhost:8080/auth/register \
+	-H "Content-Type: application/json" \
+	-d '{"email":"new@demo.local","password":"demo1234","plan":"free"}'
+
+curl -X POST http://localhost:8080/auth/register \
+	-H "Content-Type: application/json" \
+	-d '{"email":"new-standard@demo.local","password":"demo1234","plan":"standard"}'
+
+curl -X POST http://localhost:8080/auth/register \
+	-H "Content-Type: application/json" \
+	-d '{"email":"new-premium@demo.local","password":"demo1234","plan":"premium"}'
+```
+
+Login (3 plans):
+
+```bash
+curl -X POST http://localhost:8080/auth/login \
+	-H "Content-Type: application/json" \
+	-d '{"email":"free@demo.local","password":"demo1234"}'
+
+curl -X POST http://localhost:8080/auth/login \
+	-H "Content-Type: application/json" \
+	-d '{"email":"standard@demo.local","password":"demo1234"}'
+
+curl -X POST http://localhost:8080/auth/login \
+	-H "Content-Type: application/json" \
+	-d '{"email":"premium@demo.local","password":"demo1234"}'
+```
+
+Issue API key (3 plans):
+
+```bash
+curl -X POST http://localhost:8080/auth/api-key \
+  -H "Content-Type: application/json" \
+  -d '{"email":"free@demo.local","password":"demo1234"}'
+
+curl -X POST http://localhost:8080/auth/api-key \
+  -H "Content-Type: application/json" \
+  -d '{"email":"standard@demo.local","password":"demo1234"}'
+
+curl -X POST http://localhost:8080/auth/api-key \
+  -H "Content-Type: application/json" \
+  -d '{"email":"premium@demo.local","password":"demo1234"}'
 ```
 
 Expected behavior:

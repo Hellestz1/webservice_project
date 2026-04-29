@@ -2,9 +2,7 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 
 	"backend/internal/middleware"
@@ -26,14 +24,17 @@ func (s *AccessService) Authenticate(ctx context.Context, apiKey string) (middle
 	}
 
 	const q = `
-SELECT c.id::text, p.code, k.key_hash
+SELECT u.id::text, p.code, k.key_hash
 FROM api_keys k
-JOIN api_clients c ON c.id = k.client_id
-JOIN plans p ON p.id = k.plan_id
+JOIN users u ON u.id = k.user_id
+JOIN user_plans up ON up.user_id = u.id
+JOIN plans p ON p.id = up.plan_id
 WHERE k.key_prefix = $1
-  AND k.is_active = TRUE
-  AND (k.expires_at IS NULL OR k.expires_at > NOW())
-  AND c.status = 'active'`
+	AND k.is_active = TRUE
+	AND (k.expires_at IS NULL OR k.expires_at > NOW())
+	AND u.status = 'active'
+	AND up.status = 'active'
+	AND (up.ends_at IS NULL OR up.ends_at > NOW())`
 
 	rows, err := s.db.Query(ctx, q, prefix)
 	if err != nil {
@@ -108,9 +109,4 @@ ORDER BY p.code`
 	}
 
 	return policies, nil
-}
-
-func sha256Hex(value string) string {
-	hash := sha256.Sum256([]byte(value))
-	return hex.EncodeToString(hash[:])
 }

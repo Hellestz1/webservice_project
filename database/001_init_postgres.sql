@@ -78,17 +78,28 @@ CREATE TABLE IF NOT EXISTS plan_features (
     PRIMARY KEY (plan_id, feature_key)
 );
 
-CREATE TABLE IF NOT EXISTS api_clients (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_plans (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id SMALLINT NOT NULL REFERENCES plans(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ends_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
     id BIGSERIAL PRIMARY KEY,
-    client_id BIGINT NOT NULL REFERENCES api_clients(id) ON DELETE CASCADE,
-    plan_id SMALLINT NOT NULL REFERENCES plans(id),
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     key_prefix VARCHAR(32) NOT NULL,
     key_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -155,6 +166,13 @@ CREATE INDEX IF NOT EXISTS idx_api_request_logs_api_key_time
 CREATE INDEX IF NOT EXISTS idx_api_request_logs_request_id
     ON api_request_logs(request_id)
     WHERE request_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_plans_user_status
+    ON user_plans(user_id, status);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_user_active_plan
+    ON user_plans(user_id)
+    WHERE status = 'active';
 
 -- =============================
 -- Seed plans
@@ -231,26 +249,38 @@ JOIN (
 ) AS v(comic_title, chapter_no, title) ON v.comic_title = c.title
 ON CONFLICT (comic_id, chapter_no) DO NOTHING;
 
-INSERT INTO api_clients (name, status)
-VALUES ('Demo Client', 'active')
+INSERT INTO users (email, password_hash, status)
+VALUES
+    ('free@demo.local', crypt('demo1234', gen_salt('bf')), 'active'),
+    ('standard@demo.local', crypt('demo1234', gen_salt('bf')), 'active'),
+    ('premium@demo.local', crypt('demo1234', gen_salt('bf')), 'active')
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO user_plans (user_id, plan_id, status, started_at)
+SELECT u.id, p.id, 'active', NOW()
+FROM users u
+JOIN (
+    VALUES
+        ('free@demo.local', 'free'),
+        ('standard@demo.local', 'standard'),
+        ('premium@demo.local', 'premium')
+) AS v(email, plan_code) ON v.email = u.email
+JOIN plans p ON p.code = v.plan_code
 ON CONFLICT DO NOTHING;
 
-INSERT INTO api_keys (client_id, plan_id, key_prefix, key_hash, is_active)
+INSERT INTO api_keys (user_id, key_prefix, key_hash, is_active)
 SELECT
-    c.id,
-    p.id,
+    u.id,
     k.key_prefix,
     encode(digest(k.raw_key, 'sha256'), 'hex'),
     TRUE
-FROM api_clients c
+FROM users u
 JOIN (
     VALUES
-        ('free', 'free-demo-key', 'free-demo-key'),
-        ('standard', 'standard-demo-key', 'standard-demo-key'),
-        ('premium', 'premium-demo-key', 'premium-demo-key')
-) AS k(plan_code, key_prefix, raw_key) ON TRUE
-JOIN plans p ON p.code = k.plan_code
-WHERE c.name = 'Demo Client'
+        ('free@demo.local', 'free-demo-key', 'free-demo-key'),
+        ('standard@demo.local', 'standard-demo-key', 'standard-demo-key'),
+        ('premium@demo.local', 'premium-demo-key', 'premium-demo-key')
+) AS k(email, key_prefix, raw_key) ON k.email = u.email
 ON CONFLICT (key_prefix) DO NOTHING;
 
 COMMIT;
