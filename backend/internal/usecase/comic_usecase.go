@@ -45,6 +45,6 @@ func (u *ComicUsecase) ListChapters(comicID string) ([]domain.Chapter, error) {
 	return u.repo.ListChapters(comicID)
 }
 
-func (u *ComicUsecase) SearchComics(query string) ([]domain.Comic, error) {
-	return u.repo.SearchByTitle(query)
+func (u *ComicUsecase) SearchComics(filters domain.ComicSearchFilters) ([]domain.Comic, error) {
+	return u.repo.Search(filters)
 }

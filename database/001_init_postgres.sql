@@ -34,8 +34,7 @@ CREATE TABLE IF NOT EXISTS comics (
     description TEXT,
     publish_year SMALLINT,
     age_rating VARCHAR(20),
-    price NUMERIC(10,2) NOT NULL DEFAULT 0,
-    currency CHAR(3) NOT NULL DEFAULT 'THB',
+    book_type VARCHAR(20) NOT NULL DEFAULT 'comic',
     status VARCHAR(20) NOT NULL DEFAULT 'ongoing',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -136,8 +135,8 @@ CREATE INDEX IF NOT EXISTS idx_comics_publish_year
 CREATE INDEX IF NOT EXISTS idx_comics_age_rating
     ON comics(age_rating);
 
-CREATE INDEX IF NOT EXISTS idx_comics_price
-    ON comics(price);
+CREATE INDEX IF NOT EXISTS idx_comics_book_type
+    ON comics(book_type);
 
 CREATE INDEX IF NOT EXISTS idx_comics_status
     ON comics(status)
@@ -223,10 +222,57 @@ JOIN (
 ) AS v(main_slug, name, slug) ON v.main_slug = mc.slug
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO comics (title, description, publish_year, age_rating, price, status)
+INSERT INTO comics (title, description, publish_year, age_rating, book_type, status)
 VALUES
-    ('Skyblade Academy', 'A rookie swordsman enters the floating academy.', 2022, '13+', 99.00, 'ongoing'),
-    ('Midnight Archivist', 'An archivist solves supernatural incidents in old libraries.', 2023, '15+', 149.00, 'ongoing')
+    ('Skyblade Academy', 'A rookie swordsman enters the floating academy.', 2022, '13+', 'manga', 'ongoing'),
+    ('Midnight Archivist', 'An archivist solves supernatural incidents in old libraries.', 2023, '15+', 'comic', 'ongoing'),
+    ('Lantern District', 'Detectives track a string of vanishings in a fog city.', 2021, '13+', 'comic', 'ongoing'),
+    ('Crimson Harbor', 'Smugglers clash with a royal navy blockade.', 2019, '15+', 'comic', 'complete'),
+    ('Horizon Runner', 'A courier races across a shattered continent.', 2020, '13+', 'manga', 'ongoing'),
+    ('Paper Crane Pact', 'Two rivals forge a pact to save their clans.', 2018, '13+', 'manga', 'complete'),
+    ('Iron Lotus', 'A healer discovers a forbidden technique.', 2022, '13+', 'manhua', 'ongoing'),
+    ('Glass Orchard', 'A botanist explores a city made of glass.', 2024, '13+', 'lightnovel', 'ongoing'),
+    ('Silent Beacon', 'An island lighthouse signals a hidden war.', 2017, '15+', 'comic', 'complete'),
+    ('Ashen Meridian', 'A cartographer maps a realm of ash storms.', 2016, '13+', 'manhwa', 'complete'),
+    ('Golden Warden', 'A guardian spirit bonds with a runaway prince.', 2020, '13+', 'manhua', 'ongoing'),
+    ('Moonlit Circuit', 'Racers compete in a citywide night league.', 2021, '15+', 'manga', 'ongoing'),
+    ('Violet Current', 'A diver hears voices from the deep.', 2023, '15+', 'comic', 'ongoing'),
+    ('Cinder Crown', 'A blacksmith crafts a crown that changes fate.', 2019, '13+', 'manhwa', 'complete'),
+    ('Stormwright', 'An engineer builds ships to ride the storms.', 2018, '13+', 'comic', 'complete'),
+    ('Neon Nomad', 'A drifter hacks the megacity grid.', 2022, '15+', 'manhwa', 'ongoing'),
+    ('Jade Mechanic', 'A mechanic repairs sacred machines.', 2020, '13+', 'manhua', 'ongoing'),
+    ('Frostbound Opera', 'A singer breaks a winter curse.', 2016, '13+', 'lightnovel', 'complete'),
+    ('Copper Atlas', 'Explorers chart floating ruins.', 2017, '13+', 'manga', 'complete'),
+    ('River of Kites', 'Festival rivals race across river winds.', 2019, '13+', 'comic', 'complete'),
+    ('Echoes of Varn', 'A village keeps a dangerous secret.', 2015, '15+', 'manga', 'complete'),
+    ('Aurora Guild', 'Adventurers chase a skyborn relic.', 2021, '13+', 'manhwa', 'ongoing'),
+    ('Clockwork Saffron', 'A chef unlocks time-bending recipes.', 2023, '13+', 'lightnovel', 'ongoing'),
+    ('Saltglass Dunes', 'Nomads follow a mirage trail.', 2018, '13+', 'manhua', 'complete'),
+    ('Pearl Circuit', 'A robotics club fights corporate theft.', 2022, '13+', 'manga', 'ongoing'),
+    ('Black Timber', 'A ranger hunts a forest anomaly.', 2017, '15+', 'comic', 'complete'),
+    ('Starling Ferry', 'A ferry captain navigates star tides.', 2020, '13+', 'lightnovel', 'ongoing'),
+    ('Ruinforge', 'Miners awaken a buried forge.', 2016, '13+', 'manhwa', 'complete'),
+    ('Bamboo Horizon', 'A monk journeys to a distant shrine.', 2021, '13+', 'manga', 'ongoing'),
+    ('Cloud Pantry', 'A baker opens a shop in the sky.', 2024, '13+', 'lightnovel', 'ongoing'),
+    ('Marble Chorus', 'A choir keeps a city safe.', 2015, '13+', 'comic', 'complete'),
+    ('Silver Transit', 'A conductor rides intercity rails.', 2019, '13+', 'manhua', 'complete'),
+    ('Warden of Tides', 'A guardian calms a raging sea.', 2020, '13+', 'manga', 'ongoing'),
+    ('Tideglass Academy', 'Students craft glass ships.', 2023, '13+', 'manhwa', 'ongoing'),
+    ('Thorn Signal', 'A scout deciphers a coded distress.', 2018, '15+', 'comic', 'complete'),
+    ('Dragonleaf Market', 'Merchants barter with spirits.', 2022, '13+', 'manhua', 'ongoing'),
+    ('Sunken Library', 'Divers retrieve lost volumes.', 2017, '13+', 'comic', 'complete'),
+    ('Night Orchard', 'A keeper guards a forbidden grove.', 2021, '15+', 'manga', 'ongoing'),
+    ('Tempest Parade', 'Performers uncover a weather cult.', 2019, '13+', 'manhwa', 'complete'),
+    ('Harbor of Threads', 'Weavers protect a coastal city.', 2016, '13+', 'lightnovel', 'complete'),
+    ('Arcane Loom', 'A tailor stitches living spells.', 2024, '13+', 'manga', 'ongoing'),
+    ('Quartz Divide', 'Two nations fight over crystal fields.', 2018, '15+', 'comic', 'complete'),
+    ('Winter Couriers', 'Messengers cross frozen kingdoms.', 2020, '13+', 'manhwa', 'ongoing'),
+    ('Cobalt Orchard', 'Farmers cultivate rare blue fruit.', 2021, '13+', 'manhua', 'ongoing'),
+    ('Vale of Mirrors', 'A traveler faces mirrored foes.', 2015, '13+', 'lightnovel', 'complete'),
+    ('Craneforge', 'Engineers rebuild an ancient crane.', 2022, '13+', 'comic', 'ongoing'),
+    ('Amber Tide', 'A fisher finds a glowing current.', 2017, '13+', 'manga', 'complete'),
+    ('Lantern Keep', 'Guardians defend a floating keep.', 2023, '13+', 'manhwa', 'ongoing'),
+    ('Verdant Signal', 'A botanist decodes forest beacons.', 2024, '13+', 'lightnovel', 'ongoing')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO comic_categories (comic_id, category_id)

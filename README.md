@@ -52,6 +52,32 @@ backend/
 	- Rate limit: `1,000 requests/minute`
 	- Features: standard + recommendation + analytics (stubs for next step)
 
+## Plan Capabilities and Test Commands
+
+Plan differences:
+
+- `free`
+	- Allowed: list comics, comic detail, chapter list
+	- Not allowed: search
+- `standard`
+	- Allowed: free + search
+- `premium`
+	- Allowed: standard + recommendation and analytics (not implemented yet)
+
+Test with curl:
+
+```bash
+# free: list ok, search blocked
+curl -H "X-API-Key: free-demo-key" http://localhost:8080/api/v1/comics
+curl -H "X-API-Key: free-demo-key" "http://localhost:8080/api/v1/comics/search?q=sky"
+
+# standard: search allowed
+curl -H "X-API-Key: standard-demo-key" "http://localhost:8080/api/v1/comics/search?q=sky"
+
+# premium: same search allowed (premium-only endpoints are not implemented yet)
+curl -H "X-API-Key: premium-demo-key" "http://localhost:8080/api/v1/comics/search?q=sky"
+```
+
 ## Run Backend
 
 1. Prepare PostgreSQL and create database `comic_provider`.
@@ -115,7 +141,7 @@ X-API-Key: <your-key>
 - `GET /api/v1/comics`
 - `GET /api/v1/comics/{id}`
 - `GET /api/v1/comics/{id}/chapters`
-- `GET /api/v1/comics/search?q=keyword` (standard/premium)
+- `GET /api/v1/comics/search` (standard/premium)
 
 ## Quick Test
 
@@ -176,6 +202,19 @@ Expected behavior:
 
 - First command returns data.
 - Second command returns `403` because search is not in free plan.
+
+Search query parameters (optional):
+
+- `q` keyword
+- `year` exact publish year
+- `year_from` / `year_to` publish year range
+- `category` category slug
+- `age_rating` age rating
+- `type` book type (e.g. manga, manhua, manhwa, comic, lightnovel)
+- `sort` one of `created_at`, `publish_year`, `title`
+- `order` `asc` or `desc`
+- `limit` page size (default 20, max 100)
+- `page` page index (default 1)
 
 ## Next Suggested Tasks
 

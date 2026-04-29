@@ -5,7 +5,21 @@ type Comic struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Genres      []string `json:"genres"`
+	BookType    string   `json:"bookType"`
 	Status      string   `json:"status"`
+}
+
+type ComicSearchFilters struct {
+	Query     string
+	YearFrom  int
+	YearTo    int
+	Category  string
+	AgeRating string
+	BookType  string
+	SortBy    string
+	Order     string
+	Limit     int
+	Page      int
 }
 
 type Chapter struct {
