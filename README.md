@@ -205,7 +205,11 @@ Expected behavior:
 
 Search query parameters (optional):
 
-- `q` keyword
+- `q` keyword (title)
+- `title` title keyword (alias of `q`)
+- `genre` category slug (alias of `category`)
+- `author` author name keyword
+- `country` country keyword
 - `year` exact publish year
 - `year_from` / `year_to` publish year range
 - `category` category slug
@@ -215,6 +219,11 @@ Search query parameters (optional):
 - `order` `asc` or `desc`
 - `limit` page size (default 20, max 100)
 - `page` page index (default 1)
+
+Plan search scope:
+
+- `standard`: only `title`, `genre`, `author`, `country` plus pagination
+- `premium`: all parameters
 
 ## Next Suggested Tasks
 

@@ -3,6 +3,8 @@ package domain
 type Comic struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
+	Author      string   `json:"author"`
+	Country     string   `json:"country"`
 	Description string   `json:"description"`
 	Genres      []string `json:"genres"`
 	BookType    string   `json:"bookType"`
@@ -18,6 +20,8 @@ type ComicSearchFilters struct {
 	BookType  string
 	SortBy    string
 	Order     string
+	Author    string
+	Country   string
 	Limit     int
 	Page      int
 }

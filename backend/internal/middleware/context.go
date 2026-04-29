@@ -17,3 +17,7 @@ func getClientProfile(c *gin.Context) (ClientProfile, bool) {
 	profile, ok := v.(ClientProfile)
 	return profile, ok
 }
+
+func GetClientProfile(c *gin.Context) (ClientProfile, bool) {
+	return getClientProfile(c)
+}

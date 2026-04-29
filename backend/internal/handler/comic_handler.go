@@ -2,12 +2,14 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"backend/internal/domain"
+	"backend/internal/middleware"
 	"backend/internal/usecase"
 )
 
@@ -69,7 +71,13 @@ func (h *ComicHandler) ListChapters() gin.HandlerFunc {
 
 func (h *ComicHandler) SearchComics() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		filters, err := parseComicSearchFilters(c)
+		profile, ok := middleware.GetClientProfile(c)
+		if !ok {
+			writeError(c, http.StatusUnauthorized, "missing_client_profile", "missing client profile")
+			return
+		}
+
+		filters, err := parseComicSearchFilters(c, profile.Plan)
 		if err != nil {
 			writeError(c, http.StatusBadRequest, "invalid_query", err.Error())
 			return
@@ -87,7 +95,7 @@ func (h *ComicHandler) SearchComics() gin.HandlerFunc {
 	}
 }
 
-func parseComicSearchFilters(c *gin.Context) (domain.ComicSearchFilters, error) {
+func parseComicSearchFilters(c *gin.Context, plan string) (domain.ComicSearchFilters, error) {
 	filters := domain.ComicSearchFilters{
 		Query:     c.Query("q"),
 		Category:  c.Query("category"),
@@ -95,31 +103,71 @@ func parseComicSearchFilters(c *gin.Context) (domain.ComicSearchFilters, error) 
 		BookType:  c.Query("type"),
 		SortBy:    c.Query("sort"),
 		Order:     c.Query("order"),
+		Author:    c.Query("author"),
+		Country:   c.Query("country"),
 	}
 
-	if year := c.Query("year"); year != "" {
-		value, err := strconv.Atoi(year)
-		if err != nil {
-			return domain.ComicSearchFilters{}, err
-		}
-		filters.YearFrom = value
-		filters.YearTo = value
+	if filters.Query == "" {
+		filters.Query = c.Query("title")
+	}
+	if filters.Category == "" {
+		filters.Category = c.Query("genre")
 	}
 
-	if yearFrom := c.Query("year_from"); yearFrom != "" {
-		value, err := strconv.Atoi(yearFrom)
-		if err != nil {
-			return domain.ComicSearchFilters{}, err
+	allowed := map[string]bool{
+		"author": true,
+		"category": true,
+		"country": true,
+		"genre": true,
+		"limit": true,
+		"page": true,
+		"q": true,
+		"title": true,
+	}
+	if plan != "standard" {
+		allowed["age_rating"] = true
+		allowed["order"] = true
+		allowed["sort"] = true
+		allowed["type"] = true
+		allowed["year"] = true
+		allowed["year_from"] = true
+		allowed["year_to"] = true
+	}
+	for key := range c.Request.URL.Query() {
+		if !allowed[key] {
+			return domain.ComicSearchFilters{}, fmt.Errorf("unsupported query parameter: %s", key)
 		}
-		filters.YearFrom = value
 	}
 
-	if yearTo := c.Query("year_to"); yearTo != "" {
-		value, err := strconv.Atoi(yearTo)
-		if err != nil {
-			return domain.ComicSearchFilters{}, err
+	if plan != "standard" {
+		if year := c.Query("year"); year != "" {
+			value, err := strconv.Atoi(year)
+			if err != nil {
+				return domain.ComicSearchFilters{}, err
+			}
+			filters.YearFrom = value
+			filters.YearTo = value
 		}
-		filters.YearTo = value
+
+		if yearFrom := c.Query("year_from"); yearFrom != "" {
+			value, err := strconv.Atoi(yearFrom)
+			if err != nil {
+				return domain.ComicSearchFilters{}, err
+			}
+			filters.YearFrom = value
+		}
+
+		if yearTo := c.Query("year_to"); yearTo != "" {
+			value, err := strconv.Atoi(yearTo)
+			if err != nil {
+				return domain.ComicSearchFilters{}, err
+			}
+			filters.YearTo = value
+		}
+
+		if filters.YearFrom > 0 && filters.YearTo > 0 && filters.YearFrom > filters.YearTo {
+			return domain.ComicSearchFilters{}, errors.New("year_from must be <= year_to")
+		}
 	}
 
 	if limit := c.Query("limit"); limit != "" {
@@ -136,10 +184,6 @@ func parseComicSearchFilters(c *gin.Context) (domain.ComicSearchFilters, error) 
 			return domain.ComicSearchFilters{}, err
 		}
 		filters.Page = value
-	}
-
-	if filters.YearFrom > 0 && filters.YearTo > 0 && filters.YearFrom > filters.YearTo {
-		return domain.ComicSearchFilters{}, errors.New("year_from must be <= year_to")
 	}
 
 	return filters, nil

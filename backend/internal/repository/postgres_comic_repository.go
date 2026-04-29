@@ -26,6 +26,8 @@ func (r *PostgresComicRepository) List() ([]domain.Comic, error) {
 SELECT
   c.id::text,
   c.title,
+	COALESCE(c.author, ''),
+	COALESCE(c.country, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -46,7 +48,7 @@ ORDER BY c.created_at DESC`
 	comics := make([]domain.Comic, 0)
 	for rows.Next() {
 		var comic domain.Comic
-		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
 			return nil, err
 		}
 		comics = append(comics, comic)
@@ -71,6 +73,8 @@ func (r *PostgresComicRepository) GetByID(id string) (domain.Comic, bool, error)
 SELECT
   c.id::text,
   c.title,
+	COALESCE(c.author, ''),
+	COALESCE(c.country, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -82,7 +86,7 @@ WHERE c.id = $1 AND c.deleted_at IS NULL
 GROUP BY c.id`
 
 	var comic domain.Comic
-	err = r.db.QueryRow(ctx, q, comicID).Scan(&comic.ID, &comic.Title, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres)
+	err = r.db.QueryRow(ctx, q, comicID).Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return domain.Comic{}, false, nil
@@ -138,6 +142,16 @@ func (r *PostgresComicRepository) Search(filters domain.ComicSearchFilters) ([]d
 	if strings.TrimSpace(filters.Query) != "" {
 		args = append(args, strings.TrimSpace(filters.Query))
 		where = append(where, fmt.Sprintf("c.title ILIKE '%%' || $%d || '%%'", len(args)))
+	}
+
+	if strings.TrimSpace(filters.Author) != "" {
+		args = append(args, strings.TrimSpace(filters.Author))
+		where = append(where, fmt.Sprintf("c.author ILIKE '%%' || $%d || '%%'", len(args)))
+	}
+
+	if strings.TrimSpace(filters.Country) != "" {
+		args = append(args, strings.TrimSpace(filters.Country))
+		where = append(where, fmt.Sprintf("c.country ILIKE '%%' || $%d || '%%'", len(args)))
 	}
 
 	if filters.YearFrom > 0 {
@@ -208,6 +222,8 @@ func (r *PostgresComicRepository) Search(filters domain.ComicSearchFilters) ([]d
 SELECT
   c.id::text,
   c.title,
+	COALESCE(c.author, ''),
+	COALESCE(c.country, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -236,7 +252,7 @@ OFFSET $%d`, sortColumn, sortOrder, limitArg, offsetArg)
 	comics := make([]domain.Comic, 0)
 	for rows.Next() {
 		var comic domain.Comic
-		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
 			return nil, err
 		}
 		comics = append(comics, comic)

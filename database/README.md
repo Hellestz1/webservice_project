@@ -19,6 +19,8 @@ It also seeds:
 For endpoint: `GET /api/v1/catoon-books` (recommended rename to `/api/v1/cartoon-books` or keep existing `/api/v1/comics`)
 
 - `q` -> `comics.title` (trigram index)
+- `author` -> `comics.author` (trigram index)
+- `country` -> `comics.country` (trigram index)
 - `category_id` -> `comic_categories.category_id`
 - `main_category_id` -> `categories.main_category_id`
 - `min_year` / `max_year` -> `comics.publish_year`
