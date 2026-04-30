@@ -314,7 +314,54 @@ SELECT c.id, cat.id
 FROM comics c
 JOIN categories cat ON (
     (c.title = 'Skyblade Academy' AND cat.slug IN ('action', 'fantasy')) OR
-    (c.title = 'Midnight Archivist' AND cat.slug IN ('supernatural'))
+    (c.title = 'Midnight Archivist' AND cat.slug IN ('supernatural', 'mystery')) OR
+    (c.title = 'Lantern District' AND cat.slug IN ('mystery', 'drama')) OR
+    (c.title = 'Crimson Harbor' AND cat.slug IN ('action', 'drama')) OR
+    (c.title = 'Horizon Runner' AND cat.slug IN ('adventure', 'sci-fi')) OR
+    (c.title = 'Paper Crane Pact' AND cat.slug IN ('romance', 'drama')) OR
+    (c.title = 'Iron Lotus' AND cat.slug IN ('action', 'fantasy')) OR
+    (c.title = 'Glass Orchard' AND cat.slug IN ('slice-of-life', 'fantasy')) OR
+    (c.title = 'Silent Beacon' AND cat.slug IN ('mystery', 'horror')) OR
+    (c.title = 'Ashen Meridian' AND cat.slug IN ('adventure', 'fantasy')) OR
+    (c.title = 'Golden Warden' AND cat.slug IN ('fantasy', 'romance')) OR
+    (c.title = 'Moonlit Circuit' AND cat.slug IN ('action', 'sci-fi')) OR
+    (c.title = 'Violet Current' AND cat.slug IN ('mystery', 'drama')) OR
+    (c.title = 'Cinder Crown' AND cat.slug IN ('fantasy', 'drama')) OR
+    (c.title = 'Stormwright' AND cat.slug IN ('adventure', 'sci-fi')) OR
+    (c.title = 'Neon Nomad' AND cat.slug IN ('sci-fi', 'action')) OR
+    (c.title = 'Jade Mechanic' AND cat.slug IN ('action', 'sci-fi')) OR
+    (c.title = 'Frostbound Opera' AND cat.slug IN ('drama', 'romance')) OR
+    (c.title = 'Copper Atlas' AND cat.slug IN ('adventure', 'fantasy')) OR
+    (c.title = 'River of Kites' AND cat.slug IN ('drama', 'romance')) OR
+    (c.title = 'Echoes of Varn' AND cat.slug IN ('horror', 'mystery')) OR
+    (c.title = 'Aurora Guild' AND cat.slug IN ('adventure', 'fantasy')) OR
+    (c.title = 'Clockwork Saffron' AND cat.slug IN ('comedy', 'slice-of-life')) OR
+    (c.title = 'Saltglass Dunes' AND cat.slug IN ('adventure', 'drama')) OR
+    (c.title = 'Pearl Circuit' AND cat.slug IN ('sci-fi', 'action')) OR
+    (c.title = 'Black Timber' AND cat.slug IN ('horror', 'mystery')) OR
+    (c.title = 'Starling Ferry' AND cat.slug IN ('fantasy', 'slice-of-life')) OR
+    (c.title = 'Ruinforge' AND cat.slug IN ('action', 'fantasy')) OR
+    (c.title = 'Bamboo Horizon' AND cat.slug IN ('adventure', 'slice-of-life')) OR
+    (c.title = 'Cloud Pantry' AND cat.slug IN ('comedy', 'slice-of-life')) OR
+    (c.title = 'Marble Chorus' AND cat.slug IN ('drama', 'comedy')) OR
+    (c.title = 'Silver Transit' AND cat.slug IN ('sci-fi', 'drama')) OR
+    (c.title = 'Warden of Tides' AND cat.slug IN ('fantasy', 'action')) OR
+    (c.title = 'Tideglass Academy' AND cat.slug IN ('fantasy', 'adventure')) OR
+    (c.title = 'Thorn Signal' AND cat.slug IN ('mystery', 'drama')) OR
+    (c.title = 'Dragonleaf Market' AND cat.slug IN ('fantasy', 'comedy')) OR
+    (c.title = 'Sunken Library' AND cat.slug IN ('mystery', 'horror')) OR
+    (c.title = 'Night Orchard' AND cat.slug IN ('romance', 'fantasy')) OR
+    (c.title = 'Tempest Parade' AND cat.slug IN ('action', 'drama')) OR
+    (c.title = 'Harbor of Threads' AND cat.slug IN ('drama', 'romance')) OR
+    (c.title = 'Arcane Loom' AND cat.slug IN ('fantasy', 'romance')) OR
+    (c.title = 'Quartz Divide' AND cat.slug IN ('action', 'sci-fi')) OR
+    (c.title = 'Winter Couriers' AND cat.slug IN ('adventure', 'drama')) OR
+    (c.title = 'Cobalt Orchard' AND cat.slug IN ('slice-of-life', 'comedy')) OR
+    (c.title = 'Vale of Mirrors' AND cat.slug IN ('fantasy', 'mystery')) OR
+    (c.title = 'Craneforge' AND cat.slug IN ('action', 'comedy')) OR
+    (c.title = 'Amber Tide' AND cat.slug IN ('adventure', 'fantasy')) OR
+    (c.title = 'Lantern Keep' AND cat.slug IN ('fantasy', 'action')) OR
+    (c.title = 'Verdant Signal' AND cat.slug IN ('slice-of-life', 'mystery'))
 )
 ON CONFLICT (comic_id, category_id) DO NOTHING;
 
