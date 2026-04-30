@@ -22,6 +22,21 @@ func NewComicHandler(usecase *usecase.ComicUsecase) *ComicHandler {
 	return &ComicHandler{usecase: usecase}
 }
 
+// ListComics godoc
+//
+//	@Summary		List comics
+//	@Description	Returns a paginated list of comics. Available to all plans.
+//	@Tags			Comics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			limit	query		int				false	"Number of results per page (1-100, default 20)"
+//	@Param			page	query		int				false	"Page number (default 1)"
+//	@Success		200		{object}	map[string]any	"data array of comics"
+//	@Failure		400		{object}	ErrorResponse	"invalid_query"
+//	@Failure		401		{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		429		{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500		{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/comics [get]
 func (h *ComicHandler) ListComics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		limit := 20
@@ -65,6 +80,20 @@ func (h *ComicHandler) ListComics() gin.HandlerFunc {
 	}
 }
 
+// GetComicDetail godoc
+//
+//	@Summary		Get comic detail
+//	@Description	Returns detailed information for a single comic by ID. Available to all plans.
+//	@Tags			Comics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			id	path		string			true	"Comic ID"
+//	@Success		200	{object}	map[string]any	"data object of comic"
+//	@Failure		401	{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		404	{object}	ErrorResponse	"comic_not_found"
+//	@Failure		429	{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500	{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/comics/{id} [get]
 func (h *ComicHandler) GetComicDetail() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -82,6 +111,20 @@ func (h *ComicHandler) GetComicDetail() gin.HandlerFunc {
 	}
 }
 
+// ListChapters godoc
+//
+//	@Summary		List chapters of a comic
+//	@Description	Returns all chapters for the given comic ID. Available to all plans.
+//	@Tags			Comics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			id	path		string			true	"Comic ID"
+//	@Success		200	{object}	map[string]any	"data array of chapters"
+//	@Failure		401	{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		404	{object}	ErrorResponse	"comic_not_found"
+//	@Failure		429	{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500	{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/comics/{id}/chapters [get]
 func (h *ComicHandler) ListChapters() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -99,6 +142,35 @@ func (h *ComicHandler) ListChapters() gin.HandlerFunc {
 	}
 }
 
+// SearchComics godoc
+//
+//	@Summary		Search comics
+//	@Description	Search comics by various filters. Standard plan supports title/genre/author/country. Premium plan additionally supports age_rating, type, sort, order, year, year_from, year_to.
+//	@Tags			Comics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			q			query		string			false	"Keyword search by title (alias: title)"
+//	@Param			title		query		string			false	"Title keyword (alias of q)"
+//	@Param			genre		query		string			false	"Genre/category slug (alias: category)"
+//	@Param			category	query		string			false	"Category slug"
+//	@Param			author		query		string			false	"Author name keyword"
+//	@Param			country		query		string			false	"Country keyword"
+//	@Param			age_rating	query		string			false	"Age rating filter (premium only)"
+//	@Param			type		query		string			false	"Book type: manga, manhua, manhwa, comic, lightnovel (premium only)"
+//	@Param			sort		query		string			false	"Sort field: created_at, publish_year, title (premium only)"
+//	@Param			order		query		string			false	"Sort order: asc, desc (premium only)"
+//	@Param			year		query		int				false	"Exact publish year (premium only)"
+//	@Param			year_from	query		int				false	"Publish year from (premium only)"
+//	@Param			year_to		query		int				false	"Publish year to (premium only)"
+//	@Param			limit		query		int				false	"Results per page (default 20, max 100)"
+//	@Param			page		query		int				false	"Page number (default 1)"
+//	@Success		200			{object}	map[string]any	"data array of comics"
+//	@Failure		400			{object}	ErrorResponse	"invalid_query"
+//	@Failure		401			{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		403			{object}	ErrorResponse	"feature_not_allowed (free plan)"
+//	@Failure		429			{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500			{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/comics/search [get]
 func (h *ComicHandler) SearchComics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		profile, ok := middleware.GetClientProfile(c)
@@ -125,6 +197,24 @@ func (h *ComicHandler) SearchComics() gin.HandlerFunc {
 	}
 }
 
+// RecommendComics godoc
+//
+//	@Summary		Recommend similar comics
+//	@Description	Returns comics similar to the given comic ID or title. Requires premium plan.
+//	@Tags			Comics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Param			id		query		string			false	"Base comic ID to find similar comics"
+//	@Param			title	query		string			false	"Base comic title to find similar comics"
+//	@Param			limit	query		int				false	"Max results (1-50, default 10)"
+//	@Success		200		{object}	map[string]any	"data array of recommended comics"
+//	@Failure		400		{object}	ErrorResponse	"invalid_query (id or title required)"
+//	@Failure		401		{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		403		{object}	ErrorResponse	"feature_not_allowed (non-premium)"
+//	@Failure		404		{object}	ErrorResponse	"comic_not_found"
+//	@Failure		429		{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500		{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/comics/recommend [get]
 func (h *ComicHandler) RecommendComics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		baseID := strings.TrimSpace(c.Query("id"))
@@ -186,14 +276,14 @@ func parseComicSearchFilters(c *gin.Context, plan string) (domain.ComicSearchFil
 	}
 
 	allowed := map[string]bool{
-		"author": true,
+		"author":   true,
 		"category": true,
-		"country": true,
-		"genre": true,
-		"limit": true,
-		"page": true,
-		"q": true,
-		"title": true,
+		"country":  true,
+		"genre":    true,
+		"limit":    true,
+		"page":     true,
+		"q":        true,
+		"title":    true,
 	}
 	if plan != "standard" {
 		allowed["age_rating"] = true

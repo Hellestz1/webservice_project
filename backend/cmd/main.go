@@ -1,3 +1,29 @@
+// Package main is the entry point of the Comic Provider API service.
+//
+//	@title			Comic Provider API
+//	@version		1.0
+//	@description	Web service for comic book data — tiered API access via API key.
+//	@description
+//	@description	## Authentication
+//	@description	All `/api/v1/*` endpoints require the `X-API-Key` header.
+//	@description	Obtain an API key via `POST /auth/register` or `POST /auth/api-key`.
+//	@description
+//	@description	## Plans
+//	@description	| Plan | Quota | Rate Limit | Features |
+//	@description	|---|---|---|---|
+//	@description	| free | 1,000 req/month | 10 req/min | list, detail, chapters |
+//	@description	| standard | 100,000 req/month | 120 req/min | + search |
+//	@description	| premium | unlimited | 1,000 req/min | + recommend, analytics |
+//
+//	@contact.name	Comic Provider Support
+//
+//	@host		localhost:8080
+//	@BasePath	/
+//
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						X-API-Key
+//	@description				API key for accessing protected /api/v1/* endpoints
 package main
 
 import (
@@ -12,7 +38,10 @@ import (
 	"backend/internal/service"
 	"backend/internal/storage"
 	"backend/internal/usecase"
+	_ "backend/docs"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -48,6 +77,9 @@ func main() {
 	router := gin.Default()
 	router.GET("/health", handler.Health)
 
+	// Swagger UI
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	authHandler := handler.NewAuthHandler(authService)
 	router.POST("/auth/register", authHandler.Register())
 	router.POST("/auth/login", authHandler.Login())
@@ -68,6 +100,7 @@ func main() {
 	port := envOrDefault("APP_PORT", "8080")
 
 	log.Printf("comic provider started on :%s", port)
+	log.Printf("swagger UI: http://localhost:%s/swagger/index.html", port)
 	log.Printf("demo keys: free-demo-key | standard-demo-key | premium-demo-key")
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal(err)
