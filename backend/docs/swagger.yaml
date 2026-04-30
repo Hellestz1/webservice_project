@@ -1,0 +1,576 @@
+basePath: /
+definitions:
+  internal_handler.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  internal_handler.apiKeyRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secret1234
+        type: string
+    type: object
+  internal_handler.authResponse:
+    properties:
+      api_key:
+        example: sk-abc123
+        type: string
+      plan:
+        example: free
+        type: string
+    type: object
+  internal_handler.changePlanRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secret1234
+        type: string
+      plan:
+        enum:
+        - free
+        - standard
+        - premium
+        example: standard
+        type: string
+    type: object
+  internal_handler.loginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secret1234
+        type: string
+    type: object
+  internal_handler.loginResponse:
+    properties:
+      plan:
+        example: free
+        type: string
+    type: object
+  internal_handler.registerRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secret1234
+        type: string
+      plan:
+        enum:
+        - free
+        - standard
+        - premium
+        example: free
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Comic Provider Support
+  description: |-
+    Web service for comic book data — tiered API access via API key.
+
+    ## Authentication
+    All `/api/v1/*` endpoints require the `X-API-Key` header.
+    Obtain an API key via `POST /auth/register` or `POST /auth/api-key`.
+
+    ## Plans
+    | Plan | Quota | Rate Limit | Features |
+    |---|---|---|---|
+    | free | 1,000 req/month | 10 req/min | list, detail, chapters |
+    | standard | 100,000 req/month | 120 req/min | + search |
+    | premium | unlimited | 1,000 req/min | + recommend, analytics |
+  title: Comic Provider API
+  version: "1.0"
+paths:
+  /api/v1/analytics/usage:
+    get:
+      description: |-
+        Returns quota and endpoint usage stats for the authenticated user.
+        - **free**: remaining monthly quota only
+        - **standard**: remaining quota + top endpoint
+        - **premium**: remaining quota + full endpoint usage breakdown
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: usage data (fields vary by plan)
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: feature_not_allowed (free plan)
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: API usage analytics
+      tags:
+      - Analytics
+  /api/v1/comics:
+    get:
+      description: Returns a paginated list of comics. Available to all plans.
+      parameters:
+      - description: Number of results per page (1-100, default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data array of comics
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid_query
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List comics
+      tags:
+      - Comics
+  /api/v1/comics/{id}:
+    get:
+      description: Returns detailed information for a single comic by ID. Available
+        to all plans.
+      parameters:
+      - description: Comic ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data object of comic
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: comic_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get comic detail
+      tags:
+      - Comics
+  /api/v1/comics/{id}/chapters:
+    get:
+      description: Returns all chapters for the given comic ID. Available to all plans.
+      parameters:
+      - description: Comic ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data array of chapters
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: comic_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List chapters of a comic
+      tags:
+      - Comics
+  /api/v1/comics/recommend:
+    get:
+      description: Returns comics similar to the given comic ID or title. Requires
+        premium plan.
+      parameters:
+      - description: Base comic ID to find similar comics
+        in: query
+        name: id
+        type: string
+      - description: Base comic title to find similar comics
+        in: query
+        name: title
+        type: string
+      - description: Max results (1-50, default 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data array of recommended comics
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid_query (id or title required)
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: feature_not_allowed (non-premium)
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: comic_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Recommend similar comics
+      tags:
+      - Comics
+  /api/v1/comics/search:
+    get:
+      description: Search comics by various filters. Standard plan supports title/genre/author/country.
+        Premium plan additionally supports age_rating, type, sort, order, year, year_from,
+        year_to.
+      parameters:
+      - description: 'Keyword search by title (alias: title)'
+        in: query
+        name: q
+        type: string
+      - description: Title keyword (alias of q)
+        in: query
+        name: title
+        type: string
+      - description: 'Genre/category slug (alias: category)'
+        in: query
+        name: genre
+        type: string
+      - description: Category slug
+        in: query
+        name: category
+        type: string
+      - description: Author name keyword
+        in: query
+        name: author
+        type: string
+      - description: Country keyword
+        in: query
+        name: country
+        type: string
+      - description: Age rating filter (premium only)
+        in: query
+        name: age_rating
+        type: string
+      - description: 'Book type: manga, manhua, manhwa, comic, lightnovel (premium
+          only)'
+        in: query
+        name: type
+        type: string
+      - description: 'Sort field: created_at, publish_year, title (premium only)'
+        in: query
+        name: sort
+        type: string
+      - description: 'Sort order: asc, desc (premium only)'
+        in: query
+        name: order
+        type: string
+      - description: Exact publish year (premium only)
+        in: query
+        name: year
+        type: integer
+      - description: Publish year from (premium only)
+        in: query
+        name: year_from
+        type: integer
+      - description: Publish year to (premium only)
+        in: query
+        name: year_to
+        type: integer
+      - description: Results per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: data array of comics
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid_query
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: missing or invalid API key
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: feature_not_allowed (free plan)
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "429":
+          description: rate_limit_exceeded / quota_exceeded
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: internal_error
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Search comics
+      tags:
+      - Comics
+  /auth/api-key:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new API key for an authenticated user. The key is used
+        to access /api/v1/* endpoints via the X-API-Key header.
+      parameters:
+      - description: Credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.apiKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.authResponse'
+        "400":
+          description: invalid_request / invalid_input
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: invalid_credentials
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: user_inactive / plan_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: api_key_failed
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Issue API key
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password. Returns the user's active
+        plan.
+      parameters:
+      - description: Login payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.loginResponse'
+        "400":
+          description: invalid_request / invalid_input
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: invalid_credentials
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: user_inactive / plan_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: login_failed
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Login
+      tags:
+      - Auth
+  /auth/plan:
+    post:
+      consumes:
+      - application/json
+      description: Upgrade or downgrade the subscription plan for an authenticated
+        user.
+      parameters:
+      - description: Change plan payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.changePlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.authResponse'
+        "400":
+          description: invalid_request / invalid_input / plan_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "401":
+          description: invalid_credentials
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: user_inactive
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: change_plan_failed
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Change subscription plan
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with a chosen subscription plan. Returns
+        an API key on success.
+      parameters:
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.authResponse'
+        "400":
+          description: invalid_request / invalid_input / plan_not_found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: email_exists
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "500":
+          description: register_failed
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /health:
+    get:
+      description: Returns service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - System
+securityDefinitions:
+  ApiKeyAuth:
+    description: API key for accessing protected /api/v1/* endpoints
+    in: header
+    name: X-API-Key
+    type: apiKey
+swagger: "2.0"

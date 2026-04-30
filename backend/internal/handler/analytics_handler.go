@@ -17,6 +17,22 @@ func NewAnalyticsHandler(usecase *usecase.AnalyticsUsecase) *AnalyticsHandler {
 	return &AnalyticsHandler{usecase: usecase}
 }
 
+// Usage godoc
+//
+//	@Summary		API usage analytics
+//	@Description	Returns quota and endpoint usage stats for the authenticated user.
+//	@Description	- **free**: remaining monthly quota only
+//	@Description	- **standard**: remaining quota + top endpoint
+//	@Description	- **premium**: remaining quota + full endpoint usage breakdown
+//	@Tags			Analytics
+//	@Produce		json
+//	@Security		ApiKeyAuth
+//	@Success		200	{object}	map[string]any	"usage data (fields vary by plan)"
+//	@Failure		401	{object}	ErrorResponse	"missing or invalid API key"
+//	@Failure		403	{object}	ErrorResponse	"feature_not_allowed (free plan)"
+//	@Failure		429	{object}	ErrorResponse	"rate_limit_exceeded / quota_exceeded"
+//	@Failure		500	{object}	ErrorResponse	"internal_error"
+//	@Router			/api/v1/analytics/usage [get]
 func (h *AnalyticsHandler) Usage() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		profile, ok := middleware.GetClientProfile(c)

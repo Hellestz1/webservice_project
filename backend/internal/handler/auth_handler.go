@@ -12,41 +12,60 @@ type AuthHandler struct {
 	auth *service.AuthService
 }
 
+// registerRequest defines the request body for user registration.
 type registerRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Plan     string `json:"plan"`
+	Email    string `json:"email"    example:"user@example.com"`
+	Password string `json:"password" example:"secret1234"`
+	Plan     string `json:"plan"     example:"free" enums:"free,standard,premium"`
 }
 
+// loginRequest defines the request body for login.
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email"    example:"user@example.com"`
+	Password string `json:"password" example:"secret1234"`
 }
 
+// apiKeyRequest defines the request body for issuing an API key.
 type apiKeyRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email"    example:"user@example.com"`
+	Password string `json:"password" example:"secret1234"`
 }
 
+// changePlanRequest defines the request body for changing a subscription plan.
 type changePlanRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Plan     string `json:"plan"`
+	Email    string `json:"email"    example:"user@example.com"`
+	Password string `json:"password" example:"secret1234"`
+	Plan     string `json:"plan"     example:"standard" enums:"free,standard,premium"`
 }
 
+// authResponse is returned after successful registration or API key issuance.
 type authResponse struct {
-	APIKey string `json:"api_key"`
-	Plan   string `json:"plan"`
+	APIKey string `json:"api_key" example:"sk-abc123"`
+	Plan   string `json:"plan"    example:"free"`
 }
 
+// loginResponse is returned after a successful login.
 type loginResponse struct {
-	Plan string `json:"plan"`
+	Plan string `json:"plan" example:"free"`
 }
 
 func NewAuthHandler(auth *service.AuthService) *AuthHandler {
 	return &AuthHandler{auth: auth}
 }
 
+// Register godoc
+//
+//	@Summary		Register a new user
+//	@Description	Create a new user account with a chosen subscription plan. Returns an API key on success.
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		registerRequest	true	"Registration payload"
+//	@Success		201		{object}	authResponse
+//	@Failure		400		{object}	ErrorResponse	"invalid_request / invalid_input / plan_not_found"
+//	@Failure		409		{object}	ErrorResponse	"email_exists"
+//	@Failure		500		{object}	ErrorResponse	"register_failed"
+//	@Router			/auth/register [post]
 func (h *AuthHandler) Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req registerRequest
@@ -75,6 +94,20 @@ func (h *AuthHandler) Register() gin.HandlerFunc {
 	}
 }
 
+// Login godoc
+//
+//	@Summary		Login
+//	@Description	Authenticate with email and password. Returns the user's active plan.
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		loginRequest	true	"Login payload"
+//	@Success		200		{object}	loginResponse
+//	@Failure		400		{object}	ErrorResponse	"invalid_request / invalid_input"
+//	@Failure		401		{object}	ErrorResponse	"invalid_credentials"
+//	@Failure		403		{object}	ErrorResponse	"user_inactive / plan_not_found"
+//	@Failure		500		{object}	ErrorResponse	"login_failed"
+//	@Router			/auth/login [post]
 func (h *AuthHandler) Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req loginRequest
@@ -104,6 +137,20 @@ func (h *AuthHandler) Login() gin.HandlerFunc {
 	}
 }
 
+// IssueAPIKey godoc
+//
+//	@Summary		Issue API key
+//	@Description	Generate a new API key for an authenticated user. The key is used to access /api/v1/* endpoints via the X-API-Key header.
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		apiKeyRequest	true	"Credentials"
+//	@Success		200		{object}	authResponse
+//	@Failure		400		{object}	ErrorResponse	"invalid_request / invalid_input"
+//	@Failure		401		{object}	ErrorResponse	"invalid_credentials"
+//	@Failure		403		{object}	ErrorResponse	"user_inactive / plan_not_found"
+//	@Failure		500		{object}	ErrorResponse	"api_key_failed"
+//	@Router			/auth/api-key [post]
 func (h *AuthHandler) IssueAPIKey() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req apiKeyRequest
@@ -133,6 +180,20 @@ func (h *AuthHandler) IssueAPIKey() gin.HandlerFunc {
 	}
 }
 
+// ChangePlan godoc
+//
+//	@Summary		Change subscription plan
+//	@Description	Upgrade or downgrade the subscription plan for an authenticated user.
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		changePlanRequest	true	"Change plan payload"
+//	@Success		200		{object}	authResponse
+//	@Failure		400		{object}	ErrorResponse	"invalid_request / invalid_input / plan_not_found"
+//	@Failure		401		{object}	ErrorResponse	"invalid_credentials"
+//	@Failure		403		{object}	ErrorResponse	"user_inactive"
+//	@Failure		500		{object}	ErrorResponse	"change_plan_failed"
+//	@Router			/auth/plan [post]
 func (h *AuthHandler) ChangePlan() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req changePlanRequest
