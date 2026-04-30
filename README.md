@@ -40,11 +40,11 @@ backend/
 ## Package Plans (v1)
 
 - `free`
-	- Quota: `1,000 requests/month` (quota middleware not added yet)
+	- Quota: `1,000 requests/month`
 	- Rate limit: `10 requests/minute`
 	- Features: comic list, detail, chapter list
 - `standard`
-	- Quota: `100,000 requests/month` (quota middleware not added yet)
+	- Quota: `100,000 requests/month`
 	- Rate limit: `120 requests/minute`
 	- Features: free + search
 - `premium`
@@ -227,7 +227,6 @@ Plan search scope:
 
 ## Next Suggested Tasks
 
-- Add monthly quota middleware and usage table.
 - Persist rate-limit counters in Redis for multi-instance deployment.
 - Add recommendation and analytics endpoints for premium.
 - Add tests for middleware and handlers.

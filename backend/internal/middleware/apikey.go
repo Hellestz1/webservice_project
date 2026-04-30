@@ -11,6 +11,7 @@ import (
 type ClientProfile struct {
 	ClientID string
 	Plan     string
+	APIKeyID int64
 }
 
 type APIKeyAuthMiddleware struct {

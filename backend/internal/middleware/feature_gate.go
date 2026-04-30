@@ -9,6 +9,7 @@ import (
 type PlanPolicy struct {
 	AllowedFeatures   map[string]bool
 	RequestsPerMinute int
+	MonthlyQuota      int
 }
 
 type FeatureGateMiddleware struct {

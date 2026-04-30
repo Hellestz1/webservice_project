@@ -24,7 +24,7 @@ func (s *AccessService) Authenticate(ctx context.Context, apiKey string) (middle
 	}
 
 	const q = `
-SELECT u.id::text, p.code, k.key_hash
+SELECT u.id::text, p.code, k.key_hash, k.id
 FROM api_keys k
 JOIN users u ON u.id = k.user_id
 JOIN user_plans up ON up.user_id = u.id
@@ -47,12 +47,13 @@ WHERE k.key_prefix = $1
 		var clientID string
 		var planCode string
 		var keyHash string
-		if err := rows.Scan(&clientID, &planCode, &keyHash); err != nil {
+		var apiKeyID int64
+		if err := rows.Scan(&clientID, &planCode, &keyHash, &apiKeyID); err != nil {
 			return middleware.ClientProfile{}, err
 		}
 
 		if keyHash == targetHash {
-			return middleware.ClientProfile{ClientID: clientID, Plan: planCode}, nil
+			return middleware.ClientProfile{ClientID: clientID, Plan: planCode, APIKeyID: apiKeyID}, nil
 		}
 	}
 
@@ -65,7 +66,7 @@ WHERE k.key_prefix = $1
 
 func (s *AccessService) LoadPlanPolicies(ctx context.Context) (map[string]middleware.PlanPolicy, error) {
 	const q = `
-SELECT p.code, p.requests_per_minute, pf.feature_key
+SELECT p.code, p.requests_per_minute, p.monthly_quota, pf.feature_key
 FROM plans p
 LEFT JOIN plan_features pf ON pf.plan_id = p.id
 ORDER BY p.code`
@@ -80,8 +81,9 @@ ORDER BY p.code`
 	for rows.Next() {
 		var planCode string
 		var rpm int
+		var monthlyQuota sql.NullInt64
 		var feature sql.NullString
-		if err := rows.Scan(&planCode, &rpm, &feature); err != nil {
+		if err := rows.Scan(&planCode, &rpm, &monthlyQuota, &feature); err != nil {
 			return nil, err
 		}
 
@@ -90,6 +92,7 @@ ORDER BY p.code`
 			policy = middleware.PlanPolicy{
 				AllowedFeatures:   make(map[string]bool),
 				RequestsPerMinute: rpm,
+				MonthlyQuota:      int(monthlyQuota.Int64),
 			}
 		}
 

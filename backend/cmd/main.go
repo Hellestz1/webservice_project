@@ -39,6 +39,7 @@ func main() {
 
 	apiKeyAuth := middleware.NewAPIKeyAuthMiddleware(accessService)
 	rateLimiter := middleware.NewRateLimiterMiddleware(planPolicies)
+	monthlyQuota := middleware.NewMonthlyQuotaMiddleware(db, planPolicies)
 	featureGate := middleware.NewFeatureGateMiddleware(planPolicies)
 
 	router := gin.Default()
@@ -50,7 +51,7 @@ func main() {
 	router.POST("/auth/api-key", authHandler.IssueAPIKey())
 
 	apiV1 := router.Group("/api/v1")
-	apiV1.Use(apiKeyAuth.Require(), rateLimiter.Require())
+	apiV1.Use(apiKeyAuth.Require(), rateLimiter.Require(), monthlyQuota.Require())
 
 	comics := apiV1.Group("/comics")
 	comics.GET("", featureGate.Require("comic:list"), h.ListComics())
