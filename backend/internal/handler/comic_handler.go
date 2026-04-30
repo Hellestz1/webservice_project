@@ -24,7 +24,36 @@ func NewComicHandler(usecase *usecase.ComicUsecase) *ComicHandler {
 
 func (h *ComicHandler) ListComics() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		comics, err := h.usecase.ListComics()
+		limit := 20
+		if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
+			value, err := strconv.Atoi(rawLimit)
+			if err != nil {
+				writeError(c, http.StatusBadRequest, "invalid_query", "limit must be a number")
+				return
+			}
+			limit = value
+		}
+		if limit <= 0 {
+			limit = 20
+		}
+		if limit > 100 {
+			limit = 100
+		}
+
+		page := 1
+		if rawPage := strings.TrimSpace(c.Query("page")); rawPage != "" {
+			value, err := strconv.Atoi(rawPage)
+			if err != nil {
+				writeError(c, http.StatusBadRequest, "invalid_query", "page must be a number")
+				return
+			}
+			page = value
+		}
+		if page <= 0 {
+			page = 1
+		}
+
+		comics, err := h.usecase.ListComics(limit, page)
 		if err != nil {
 			writeError(c, http.StatusInternalServerError, "internal_error", "unexpected error")
 			return

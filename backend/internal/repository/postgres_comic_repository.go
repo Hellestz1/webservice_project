@@ -19,8 +19,19 @@ func NewPostgresComicRepository(db *pgxpool.Pool) *PostgresComicRepository {
 	return &PostgresComicRepository{db: db}
 }
 
-func (r *PostgresComicRepository) List() ([]domain.Comic, error) {
+func (r *PostgresComicRepository) ListPaged(limit int, page int) ([]domain.Comic, error) {
 	ctx := context.Background()
+
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
 
 	const q = `
 SELECT
@@ -37,9 +48,11 @@ LEFT JOIN comic_categories cc ON cc.comic_id = c.id
 LEFT JOIN categories cat ON cat.id = cc.category_id
 WHERE c.deleted_at IS NULL
 GROUP BY c.id
-ORDER BY c.created_at DESC`
+ORDER BY c.created_at DESC
+LIMIT $1
+OFFSET $2`
 
-	rows, err := r.db.Query(ctx, q)
+	rows, err := r.db.Query(ctx, q, limit, offset)
 	if err != nil {
 		return nil, err
 	}

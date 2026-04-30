@@ -149,7 +149,7 @@ X-API-Key: <your-key>
 ## Quick Test
 
 ```bash
-curl -H "X-API-Key: free-demo-key" http://localhost:8080/api/v1/comics
+curl -H "X-API-Key: free-demo-key" "http://localhost:8080/api/v1/comics?limit=20&page=1"
 curl -H "X-API-Key: free-demo-key" http://localhost:8080/api/v1/comics/search?q=sky
 ```
 
@@ -228,6 +228,11 @@ Search query parameters (optional):
 - `type` book type (e.g. manga, manhua, manhwa, comic, lightnovel)
 - `sort` one of `created_at`, `publish_year`, `title`
 - `order` `asc` or `desc`
+- `limit` page size (default 20, max 100)
+- `page` page index (default 1)
+
+Comics list query parameters (optional):
+
 - `limit` page size (default 20, max 100)
 - `page` page index (default 1)
 

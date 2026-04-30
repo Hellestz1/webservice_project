@@ -17,8 +17,8 @@ func NewComicUsecase(repo repository.ComicRepository) *ComicUsecase {
 	return &ComicUsecase{repo: repo}
 }
 
-func (u *ComicUsecase) ListComics() ([]domain.Comic, error) {
-	return u.repo.List()
+func (u *ComicUsecase) ListComics(limit int, page int) ([]domain.Comic, error) {
+	return u.repo.ListPaged(limit, page)
 }
 
 func (u *ComicUsecase) GetComicDetail(id string) (domain.Comic, error) {
