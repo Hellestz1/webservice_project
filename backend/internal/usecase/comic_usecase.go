@@ -48,3 +48,25 @@ func (u *ComicUsecase) ListChapters(comicID string) ([]domain.Chapter, error) {
 func (u *ComicUsecase) SearchComics(filters domain.ComicSearchFilters) ([]domain.Comic, error) {
 	return u.repo.Search(filters)
 }
+
+func (u *ComicUsecase) RecommendComics(baseID string, title string, limit int) ([]domain.Comic, error) {
+	var (
+		base domain.Comic
+		ok   bool
+		err  error
+	)
+
+	if baseID != "" {
+		base, ok, err = u.repo.GetByID(baseID)
+	} else {
+		base, ok, err = u.repo.GetByTitle(title)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, ErrComicNotFound
+	}
+
+	return u.repo.RecommendByComic(base, limit)
+}

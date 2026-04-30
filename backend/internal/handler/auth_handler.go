@@ -28,6 +28,12 @@ type apiKeyRequest struct {
 	Password string `json:"password"`
 }
 
+type changePlanRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Plan     string `json:"plan"`
+}
+
 type authResponse struct {
 	APIKey string `json:"api_key"`
 	Plan   string `json:"plan"`
@@ -124,5 +130,34 @@ func (h *AuthHandler) IssueAPIKey() gin.HandlerFunc {
 		}
 
 		writeJSON(c, http.StatusOK, authResponse{APIKey: result.APIKey, Plan: result.Plan})
+	}
+}
+
+func (h *AuthHandler) ChangePlan() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req changePlanRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			writeError(c, http.StatusBadRequest, "invalid_request", "invalid request body")
+			return
+		}
+
+		result, err := h.auth.ChangePlan(c.Request.Context(), req.Email, req.Password, req.Plan)
+		if err != nil {
+			switch err {
+			case service.ErrInvalidCredentials:
+				writeError(c, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
+			case service.ErrUserInactive:
+				writeError(c, http.StatusForbidden, "user_inactive", "user is inactive")
+			case service.ErrPlanNotFound:
+				writeError(c, http.StatusBadRequest, "plan_not_found", "plan not found")
+			case service.ErrInvalidInput:
+				writeError(c, http.StatusBadRequest, "invalid_input", "invalid email or password")
+			default:
+				writeError(c, http.StatusInternalServerError, "change_plan_failed", "change plan failed")
+			}
+			return
+		}
+
+		writeJSON(c, http.StatusOK, authResponse{Plan: result.Plan})
 	}
 }

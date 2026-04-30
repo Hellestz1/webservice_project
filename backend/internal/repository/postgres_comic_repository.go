@@ -97,6 +97,54 @@ GROUP BY c.id`
 	return comic, true, nil
 }
 
+func (r *PostgresComicRepository) GetByTitle(title string) (domain.Comic, bool, error) {
+	ctx := context.Background()
+
+	trimmed := strings.TrimSpace(title)
+	if trimmed == "" {
+		return domain.Comic{}, false, nil
+	}
+	pattern := "%" + trimmed + "%"
+
+	const q = `
+SELECT
+  c.id::text,
+  c.title,
+	COALESCE(c.author, ''),
+	COALESCE(c.country, ''),
+  COALESCE(c.description, ''),
+	c.book_type,
+  c.status,
+  COALESCE(array_agg(DISTINCT cat.slug) FILTER (WHERE cat.slug IS NOT NULL), '{}') AS genres
+FROM comics c
+LEFT JOIN comic_categories cc ON cc.comic_id = c.id
+LEFT JOIN categories cat ON cat.id = cc.category_id
+WHERE c.title ILIKE $1 AND c.deleted_at IS NULL
+GROUP BY c.id
+ORDER BY c.title ASC
+LIMIT 1`
+
+	var comic domain.Comic
+	err := r.db.QueryRow(ctx, q, pattern).Scan(
+		&comic.ID,
+		&comic.Title,
+		&comic.Author,
+		&comic.Country,
+		&comic.Description,
+		&comic.BookType,
+		&comic.Status,
+		&comic.Genres,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return domain.Comic{}, false, nil
+		}
+		return domain.Comic{}, false, err
+	}
+
+	return comic, true, nil
+}
+
 func (r *PostgresComicRepository) ListChapters(comicID string) ([]domain.Chapter, error) {
 	ctx := context.Background()
 
@@ -244,6 +292,90 @@ LIMIT $%d
 OFFSET $%d`, sortColumn, sortOrder, limitArg, offsetArg)
 
 	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	comics := make([]domain.Comic, 0)
+	for rows.Next() {
+		var comic domain.Comic
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+			return nil, err
+		}
+		comics = append(comics, comic)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return comics, nil
+}
+
+func (r *PostgresComicRepository) RecommendByComic(base domain.Comic, limit int) ([]domain.Comic, error) {
+	ctx := context.Background()
+
+	comicID, err := strconv.ParseInt(base.ID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	const q = `
+WITH base AS (
+	SELECT id, author, country, book_type
+	FROM comics
+	WHERE id = $1 AND deleted_at IS NULL
+),
+base_genres AS (
+	SELECT category_id
+	FROM comic_categories
+	WHERE comic_id = $1
+),
+scored AS (
+	SELECT
+		c.id::text,
+		c.title,
+		COALESCE(c.author, '') AS author,
+		COALESCE(c.country, '') AS country,
+		COALESCE(c.description, '') AS description,
+		c.book_type,
+		c.status,
+		COALESCE(array_agg(DISTINCT cat.slug) FILTER (WHERE cat.slug IS NOT NULL), '{}') AS genres,
+		CASE WHEN c.author <> '' AND c.author = b.author THEN 3 ELSE 0 END AS author_score,
+		COALESCE(SUM(CASE WHEN bg.category_id IS NOT NULL THEN 2 ELSE 0 END), 0) AS genre_score,
+		CASE WHEN c.country <> '' AND c.country = b.country THEN 1 ELSE 0 END AS country_score,
+		CASE WHEN c.book_type = b.book_type THEN 1 ELSE 0 END AS type_score
+	FROM comics c
+	JOIN base b ON true
+	LEFT JOIN comic_categories cc ON cc.comic_id = c.id
+	LEFT JOIN categories cat ON cat.id = cc.category_id
+	LEFT JOIN base_genres bg ON bg.category_id = cc.category_id
+	WHERE c.deleted_at IS NULL AND c.id <> b.id
+	GROUP BY c.id, b.author, b.country, b.book_type
+)
+SELECT
+	id,
+	title,
+	author,
+	country,
+	description,
+	book_type,
+	status,
+	genres
+FROM scored
+WHERE (author_score + genre_score + country_score + type_score) > 0
+ORDER BY (author_score + genre_score + country_score + type_score) DESC, title ASC
+LIMIT $2`
+
+	rows, err := r.db.Query(ctx, q, comicID, limit)
 	if err != nil {
 		return nil, err
 	}

@@ -43,7 +43,7 @@ func (m *MonthlyQuotaMiddleware) Require() gin.HandlerFunc {
 		quota := policy.MonthlyQuota
 		if quota > 0 {
 			ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
-			count, err := m.countMonthRequests(ctx, profile.APIKeyID)
+			count, err := m.countMonthRequests(ctx, profile.UserID)
 			cancel()
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, map[string]string{
@@ -74,26 +74,30 @@ func (m *MonthlyQuotaMiddleware) Require() gin.HandlerFunc {
 
 		start := time.Now().UTC()
 		c.Next()
-		m.logRequest(c, profile.APIKeyID, start)
+		m.logRequest(c, profile.APIKeyID, profile.UserID, start)
 	}
 }
 
-func (m *MonthlyQuotaMiddleware) countMonthRequests(ctx context.Context, apiKeyID int64) (int, error) {
+func (m *MonthlyQuotaMiddleware) countMonthRequests(ctx context.Context, userID int64) (int, error) {
 	const q = `
 SELECT COUNT(*)
-FROM api_request_logs
-WHERE api_key_id = $1
-  AND requested_at >= date_trunc('month', NOW())
-  AND requested_at < date_trunc('month', NOW()) + interval '1 month'`
+FROM api_request_logs l
+LEFT JOIN api_keys k ON k.id = l.api_key_id
+JOIN user_plans up ON up.user_id = COALESCE(l.user_id, k.user_id)
+WHERE COALESCE(l.user_id, k.user_id) = $1
+  AND up.status = 'active'
+  AND (up.ends_at IS NULL OR up.ends_at > NOW())
+  AND l.requested_at >= GREATEST(up.started_at, date_trunc('month', NOW()))
+  AND l.requested_at < date_trunc('month', NOW()) + interval '1 month'`
 
 	var count int
-	if err := m.db.QueryRow(ctx, q, apiKeyID).Scan(&count); err != nil {
+	if err := m.db.QueryRow(ctx, q, userID).Scan(&count); err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
-func (m *MonthlyQuotaMiddleware) logRequest(c *gin.Context, apiKeyID int64, start time.Time) {
+func (m *MonthlyQuotaMiddleware) logRequest(c *gin.Context, apiKeyID int64, userID int64, start time.Time) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -106,6 +110,7 @@ func (m *MonthlyQuotaMiddleware) logRequest(c *gin.Context, apiKeyID int64, star
 INSERT INTO api_request_logs (
   request_id,
   api_key_id,
+	user_id,
   path,
   method,
   status_code,
@@ -116,13 +121,14 @@ INSERT INTO api_request_logs (
   response_ms,
   requested_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`
 
 	_, _ = m.db.Exec(
 		ctx,
 		q,
 		c.GetHeader("X-Request-Id"),
 		apiKeyID,
+		userID,
 		c.Request.URL.Path,
 		c.Request.Method,
 		c.Writer.Status(),

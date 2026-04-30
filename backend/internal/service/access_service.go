@@ -24,7 +24,7 @@ func (s *AccessService) Authenticate(ctx context.Context, apiKey string) (middle
 	}
 
 	const q = `
-SELECT u.id::text, p.code, k.key_hash, k.id
+	SELECT u.id::text, u.id, p.code, k.key_hash, k.id
 FROM api_keys k
 JOIN users u ON u.id = k.user_id
 JOIN user_plans up ON up.user_id = u.id
@@ -45,15 +45,21 @@ WHERE k.key_prefix = $1
 	targetHash := sha256Hex(apiKey)
 	for rows.Next() {
 		var clientID string
+		var userID int64
 		var planCode string
 		var keyHash string
 		var apiKeyID int64
-		if err := rows.Scan(&clientID, &planCode, &keyHash, &apiKeyID); err != nil {
+		if err := rows.Scan(&clientID, &userID, &planCode, &keyHash, &apiKeyID); err != nil {
 			return middleware.ClientProfile{}, err
 		}
 
 		if keyHash == targetHash {
-			return middleware.ClientProfile{ClientID: clientID, Plan: planCode, APIKeyID: apiKeyID}, nil
+			return middleware.ClientProfile{
+				ClientID: clientID,
+				Plan:     planCode,
+				APIKeyID: apiKeyID,
+				UserID:   userID,
+			}, nil
 		}
 	}
 

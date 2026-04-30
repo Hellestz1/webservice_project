@@ -138,10 +138,13 @@ X-API-Key: <your-key>
 - `POST /auth/register`
 - `POST /auth/login`
 - `POST /auth/api-key`
+- `POST /auth/plan`
 - `GET /api/v1/comics`
 - `GET /api/v1/comics/{id}`
 - `GET /api/v1/comics/{id}/chapters`
 - `GET /api/v1/comics/search` (standard/premium)
+- `GET /api/v1/comics/recommend` (premium)
+- `GET /api/v1/analytics/usage` (all plans)
 
 ## Quick Test
 
@@ -196,6 +199,14 @@ curl -X POST http://localhost:8080/auth/api-key \
 curl -X POST http://localhost:8080/auth/api-key \
   -H "Content-Type: application/json" \
   -d '{"email":"premium@demo.local","password":"demo1234"}'
+
+Change plan:
+
+```bash
+curl -X POST http://localhost:8080/auth/plan \
+	-H "Content-Type: application/json" \
+	-d '{"email":"standard@demo.local","password":"demo1234","plan":"premium"}'
+```
 ```
 
 Expected behavior:
@@ -224,6 +235,18 @@ Plan search scope:
 
 - `standard`: only `title`, `genre`, `author`, `country` plus pagination
 - `premium`: all parameters
+
+Recommend query parameters (premium):
+
+- `id` comic id
+- `title` comic title keyword
+- `limit` (default 10, max 50)
+
+Analytics usage response (by plan):
+
+- `free`: `{ "remaining": number }`
+- `standard`: `{ "remaining": number, "top": { "path": string, "count": number } }`
+- `premium`: `{ "remaining": number, "lines": [{ "path": string, "count": number }] }`
 
 ## Next Suggested Tasks
 

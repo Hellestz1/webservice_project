@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -85,6 +86,47 @@ func (h *ComicHandler) SearchComics() gin.HandlerFunc {
 
 		comics, err := h.usecase.SearchComics(filters)
 		if err != nil {
+			writeError(c, http.StatusInternalServerError, "internal_error", "unexpected error")
+			return
+		}
+
+		writeJSON(c, http.StatusOK, map[string]any{
+			"data": comics,
+		})
+	}
+}
+
+func (h *ComicHandler) RecommendComics() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		baseID := strings.TrimSpace(c.Query("id"))
+		title := strings.TrimSpace(c.Query("title"))
+		if baseID == "" && title == "" {
+			writeError(c, http.StatusBadRequest, "invalid_query", "id or title is required")
+			return
+		}
+
+		limit := 10
+		if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
+			value, err := strconv.Atoi(rawLimit)
+			if err != nil {
+				writeError(c, http.StatusBadRequest, "invalid_query", "limit must be a number")
+				return
+			}
+			limit = value
+		}
+		if limit <= 0 {
+			limit = 10
+		}
+		if limit > 50 {
+			limit = 50
+		}
+
+		comics, err := h.usecase.RecommendComics(baseID, title, limit)
+		if err != nil {
+			if errors.Is(err, usecase.ErrComicNotFound) {
+				writeError(c, http.StatusNotFound, "comic_not_found", "comic not found")
+				return
+			}
 			writeError(c, http.StatusInternalServerError, "internal_error", "unexpected error")
 			return
 		}

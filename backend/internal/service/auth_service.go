@@ -148,6 +148,42 @@ func (s *AuthService) IssueAPIKey(ctx context.Context, email, password string) (
 	return AuthResult{APIKey: apiKey, Plan: planCode}, nil
 }
 
+func (s *AuthService) ChangePlan(ctx context.Context, email, password, planCode string) (AuthResult, error) {
+	userID, _, err := s.authenticateUser(ctx, email, password)
+	if err != nil {
+		return AuthResult{}, err
+	}
+
+	planID, err := s.findPlanID(ctx, strings.TrimSpace(planCode))
+	if err != nil {
+		return AuthResult{}, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return AuthResult{}, err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	if _, err = tx.Exec(ctx, "UPDATE user_plans SET status = 'inactive', ends_at = NOW() WHERE user_id = $1 AND status = 'active'", userID); err != nil {
+		return AuthResult{}, err
+	}
+
+	if _, err = tx.Exec(ctx, "INSERT INTO user_plans (user_id, plan_id, status, started_at) VALUES ($1, $2, 'active', NOW())", userID, planID); err != nil {
+		return AuthResult{}, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return AuthResult{}, err
+	}
+
+	return AuthResult{Plan: strings.TrimSpace(planCode)}, nil
+}
+
 func (s *AuthService) findPlanID(ctx context.Context, planCode string) (int, error) {
 	const q = `SELECT id FROM plans WHERE code = $1`
 	var planID int

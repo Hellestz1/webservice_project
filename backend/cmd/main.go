@@ -29,6 +29,9 @@ func main() {
 	repo := repository.NewPostgresComicRepository(db)
 	uc := usecase.NewComicUsecase(repo)
 	h := handler.NewComicHandler(uc)
+	analyticsRepo := repository.NewPostgresAnalyticsRepository(db)
+	analyticsUsecase := usecase.NewAnalyticsUsecase(analyticsRepo)
+	analyticsHandler := handler.NewAnalyticsHandler(analyticsUsecase)
 
 	accessService := service.NewAccessService(db)
 	authService := service.NewAuthService(db)
@@ -49,13 +52,16 @@ func main() {
 	router.POST("/auth/register", authHandler.Register())
 	router.POST("/auth/login", authHandler.Login())
 	router.POST("/auth/api-key", authHandler.IssueAPIKey())
+	router.POST("/auth/plan", authHandler.ChangePlan())
 
 	apiV1 := router.Group("/api/v1")
 	apiV1.Use(apiKeyAuth.Require(), rateLimiter.Require(), monthlyQuota.Require())
+	apiV1.GET("/analytics/usage", featureGate.Require("analytics:usage"), analyticsHandler.Usage())
 
 	comics := apiV1.Group("/comics")
 	comics.GET("", featureGate.Require("comic:list"), h.ListComics())
 	comics.GET("/search", featureGate.Require("comic:search"), h.SearchComics())
+	comics.GET("/recommend", featureGate.Require("comic:recommend"), h.RecommendComics())
 	comics.GET("/:id", featureGate.Require("comic:detail"), h.GetComicDetail())
 	comics.GET("/:id/chapters", featureGate.Require("chapter:list"), h.ListChapters())
 

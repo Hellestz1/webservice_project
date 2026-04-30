@@ -12,6 +12,7 @@ type ClientProfile struct {
 	ClientID string
 	Plan     string
 	APIKeyID int64
+	UserID   int64
 }
 
 type APIKeyAuthMiddleware struct {

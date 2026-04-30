@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS api_request_logs (
     id BIGSERIAL PRIMARY KEY,
     request_id VARCHAR(64),
     api_key_id BIGINT REFERENCES api_keys(id) ON DELETE SET NULL,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     path VARCHAR(255) NOT NULL,
     method VARCHAR(10) NOT NULL,
     status_code INT NOT NULL,
@@ -129,6 +130,9 @@ CREATE TABLE IF NOT EXISTS api_request_logs (
     response_ms INT,
     requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE api_request_logs
+    ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id) ON DELETE SET NULL;
 
 -- =============================
 -- Indexes for filters/search/sort
@@ -175,6 +179,9 @@ CREATE INDEX IF NOT EXISTS idx_chapters_comic_id
 CREATE INDEX IF NOT EXISTS idx_api_request_logs_requested_at
     ON api_request_logs(requested_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_api_request_logs_user_time
+    ON api_request_logs(user_id, requested_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_api_request_logs_api_key_time
     ON api_request_logs(api_key_id, requested_at DESC);
 
@@ -208,15 +215,18 @@ JOIN (
         ('free', 'comic:list'),
         ('free', 'comic:detail'),
         ('free', 'chapter:list'),
+        ('free', 'analytics:usage'),
         ('standard', 'comic:list'),
         ('standard', 'comic:detail'),
         ('standard', 'chapter:list'),
         ('standard', 'comic:search'),
+        ('standard', 'analytics:usage'),
         ('premium', 'comic:list'),
         ('premium', 'comic:detail'),
         ('premium', 'chapter:list'),
         ('premium', 'comic:search'),
         ('premium', 'comic:recommend'),
+        ('premium', 'analytics:usage'),
         ('premium', 'analytics:realtime')
 ) AS f(plan_code, feature_key) ON f.plan_code = p.code
 ON CONFLICT (plan_id, feature_key) DO NOTHING;
