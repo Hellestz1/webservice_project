@@ -244,7 +244,15 @@ JOIN (
     VALUES
         ('manga', 'Action', 'action'),
         ('manga', 'Fantasy', 'fantasy'),
-        ('comic', 'Supernatural', 'supernatural')
+        ('manga', 'Romance', 'romance'),
+        ('manga', 'Sci-Fi', 'sci-fi'),
+        ('manga', 'Slice of Life', 'slice-of-life'),
+        ('manga', 'Adventure', 'adventure'),
+        ('comic', 'Supernatural', 'supernatural'),
+        ('comic', 'Mystery', 'mystery'),
+        ('comic', 'Horror', 'horror'),
+        ('comic', 'Drama', 'drama'),
+        ('comic', 'Comedy', 'comedy')
 ) AS v(main_slug, name, slug) ON v.main_slug = mc.slug
 ON CONFLICT (slug) DO NOTHING;
 

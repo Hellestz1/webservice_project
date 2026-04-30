@@ -39,6 +39,8 @@ SELECT
   c.title,
 	COALESCE(c.author, ''),
 	COALESCE(c.country, ''),
+	COALESCE(c.publish_year, 0),
+	COALESCE(c.age_rating, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -61,7 +63,7 @@ OFFSET $2`
 	comics := make([]domain.Comic, 0)
 	for rows.Next() {
 		var comic domain.Comic
-		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.PublishYear, &comic.AgeRating, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
 			return nil, err
 		}
 		comics = append(comics, comic)
@@ -88,6 +90,8 @@ SELECT
   c.title,
 	COALESCE(c.author, ''),
 	COALESCE(c.country, ''),
+	COALESCE(c.publish_year, 0),
+	COALESCE(c.age_rating, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -99,7 +103,7 @@ WHERE c.id = $1 AND c.deleted_at IS NULL
 GROUP BY c.id`
 
 	var comic domain.Comic
-	err = r.db.QueryRow(ctx, q, comicID).Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres)
+	err = r.db.QueryRow(ctx, q, comicID).Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.PublishYear, &comic.AgeRating, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return domain.Comic{}, false, nil
@@ -125,6 +129,8 @@ SELECT
   c.title,
 	COALESCE(c.author, ''),
 	COALESCE(c.country, ''),
+	COALESCE(c.publish_year, 0),
+	COALESCE(c.age_rating, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -143,6 +149,8 @@ LIMIT 1`
 		&comic.Title,
 		&comic.Author,
 		&comic.Country,
+		&comic.PublishYear,
+		&comic.AgeRating,
 		&comic.Description,
 		&comic.BookType,
 		&comic.Status,
@@ -285,6 +293,8 @@ SELECT
   c.title,
 	COALESCE(c.author, ''),
 	COALESCE(c.country, ''),
+	COALESCE(c.publish_year, 0),
+	COALESCE(c.age_rating, ''),
   COALESCE(c.description, ''),
 	c.book_type,
   c.status,
@@ -313,7 +323,7 @@ OFFSET $%d`, sortColumn, sortOrder, limitArg, offsetArg)
 	comics := make([]domain.Comic, 0)
 	for rows.Next() {
 		var comic domain.Comic
-		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.PublishYear, &comic.AgeRating, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
 			return nil, err
 		}
 		comics = append(comics, comic)
@@ -358,6 +368,8 @@ scored AS (
 		c.title,
 		COALESCE(c.author, '') AS author,
 		COALESCE(c.country, '') AS country,
+		COALESCE(c.publish_year, 0) AS publish_year,
+		COALESCE(c.age_rating, '') AS age_rating,
 		COALESCE(c.description, '') AS description,
 		c.book_type,
 		c.status,
@@ -379,6 +391,8 @@ SELECT
 	title,
 	author,
 	country,
+	publish_year,
+	age_rating,
 	description,
 	book_type,
 	status,
@@ -397,7 +411,7 @@ LIMIT $2`
 	comics := make([]domain.Comic, 0)
 	for rows.Next() {
 		var comic domain.Comic
-		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
+		if err := rows.Scan(&comic.ID, &comic.Title, &comic.Author, &comic.Country, &comic.PublishYear, &comic.AgeRating, &comic.Description, &comic.BookType, &comic.Status, &comic.Genres); err != nil {
 			return nil, err
 		}
 		comics = append(comics, comic)

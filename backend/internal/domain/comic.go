@@ -5,6 +5,8 @@ type Comic struct {
 	Title       string   `json:"title"`
 	Author      string   `json:"author"`
 	Country     string   `json:"country"`
+	PublishYear int      `json:"publishYear"`
+	AgeRating   string   `json:"ageRating"`
 	Description string   `json:"description"`
 	Genres      []string `json:"genres"`
 	BookType    string   `json:"bookType"`
